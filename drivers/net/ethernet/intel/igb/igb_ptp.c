@@ -912,6 +912,9 @@ void igb_ptp_tx_hang(struct igb_adapter *adapter)
 {
 	unsigned long flags;
 
+	if (adapter->tstamp_config.tx_type != HWTSTAMP_TX_ON)
+		return;
+
 	spin_lock_irqsave(&adapter->ptp_tx_lock, flags);
 
 	if (!adapter->ptp_tx_skb)
@@ -1249,6 +1252,13 @@ static int igb_ptp_set_timestamp_mode(struct igb_adapter *adapter,
 	regval &= ~E1000_TSYNCTXCTL_ENABLED;
 	regval |= tsync_tx_ctl;
 	wr32(E1000_TSYNCTXCTL, regval);
+
+	/* Drop a possibly pending Tx timestamp request when disabling Tx
+	 * timestamping. It would otherwise block new requests until it is
+	 * flagged as timed out by the watchdog up to 15 seconds later.
+	 */
+	if (!tsync_tx_ctl)
+		igb_ptp_clear_tx_tstamp(adapter);
 
 	/* enable/disable RX */
 	regval = rd32(E1000_TSYNCRXCTL);
