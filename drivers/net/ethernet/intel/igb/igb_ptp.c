@@ -1104,6 +1104,9 @@ int igb_ptp_hwtstamp_get(struct net_device *netdev,
 {
 	struct igb_adapter *adapter = netdev_priv(netdev);
 
+	if (!(adapter->ptp_flags & IGB_PTP_ENABLED))
+		return -EOPNOTSUPP;
+
 	*config = adapter->tstamp_config;
 
 	return 0;
@@ -1284,6 +1287,9 @@ int igb_ptp_hwtstamp_set(struct net_device *netdev,
 {
 	struct igb_adapter *adapter = netdev_priv(netdev);
 	int err;
+
+	if (!(adapter->ptp_flags & IGB_PTP_ENABLED))
+		return -EOPNOTSUPP;
 
 	err = igb_ptp_set_timestamp_mode(adapter, config);
 	if (err)
